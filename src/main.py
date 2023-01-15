@@ -53,11 +53,11 @@ async def write_image_url_to_file():
 
 async def get_bh_image(session, url, token_id):
     ipfs_provider_list = ['gateway.pinata.cloud', 'cloudflare-ipfs.com', 'cf-ipfs.com', 'ipfs.joaoleitao.org',
-                     'ipfs-gateway.cloud', 'ipfs.sloppyta.co', 'via0.com', 'ipfs.eth.aragon.network',
-                     'ipfs.litnet.work', 'ipfs.runfission.com', '4everland.io', 'nftstorage.link',
-                     'w3s.link', 'hub.textile.io', 'ipfs.jpu.jp', 'ipfs.io']
+                          'ipfs-gateway.cloud', 'ipfs.sloppyta.co', 'via0.com', 'ipfs.eth.aragon.network',
+                          'ipfs.litnet.work', 'ipfs.runfission.com', '4everland.io', 'nftstorage.link',
+                          'w3s.link', 'hub.textile.io', 'ipfs.jpu.jp', 'ipfs.io']
     random_provider = random.choice(ipfs_provider_list)
-    url.replace('ipfs.io',random_provider)
+    url.replace('ipfs.io', random_provider)
     try:
         async with session.get(url) as resp:
             if resp.status == 200:
@@ -65,25 +65,22 @@ async def get_bh_image(session, url, token_id):
                 with open(f'img/bh_{token_id}.png', 'wb') as bh_image_file:
                     bh_image_file.write(bh_image)
                     print(f'imagen del token nº {token_id}--> DESCARGADA\n')
+            else:
+                print(f'imagen del token nº {token_id}--> ERROR\nProvider--> {random_provider}')
+                await get_bh_image(session, url, token_id)
 
-    except aiohttp.ClientPayloadError:
-        print(f'imagen del token nº {token_id}--> ERROR\n Provider--> {random_provider}')
+    except Exception:
+        print(f'imagen del token nº {token_id}--> ERROR\nProvider--> {random_provider}')
         await get_bh_image(session, url, token_id)
-
-    except aiohttp.ClientConnectorError:
-        print(f'imagen del token nº {token_id}--> ERROR\n Provider--> {random_provider}')
-        await get_bh_image(session, url, token_id)
-
-    except aiohttp.ClientOSError:
-        print(f'imagen del token nº {token_id}--> ERROR\n Provider--> {random_provider}')
-        await get_bh_image(session, url, token_id)
-
-
-
-
 
 
 async def save_images():
+    file_list = os.listdir('img')
+    downloaded_token_id_list = []
+    for file_name in file_list:
+        name_withour_bh_list = file_name.split('bh_')
+        token_id_list = name_withour_bh_list[1].split('.png')
+        downloaded_token_id_list.append(int(token_id_list[0]))
     async with aiohttp.ClientSession() as session:
         tasks = []
         with open('bh_list.txt', 'r') as bh_file:
@@ -92,12 +89,26 @@ async def save_images():
                 json_line = json.loads(line)
                 image_url = json_line['image']
                 token_id = json_line['tokenId']
-                tasks.append(asyncio.ensure_future(get_bh_image(session, image_url, token_id)))
+                if token_id not in downloaded_token_id_list:
+                    tasks.append(asyncio.ensure_future(get_bh_image(session, image_url, token_id)))
 
             await asyncio.gather(*tasks)
 
 
-
 asyncio.run(save_images())
+
+#if __name__ == '__main__':
+#    file_list = os.listdir('img')
+#    downloaded_token_id_list = []
+#    counter = 0
+#    for file_name in file_list:
+#        name_withour_bh_list = file_name.split('bh_')
+#        token_id_list = name_withour_bh_list[1].split('.png')
+#        downloaded_token_id_list.append(int(token_id_list[0]))
+#        counter += 1
+#
+#    print(downloaded_token_id_list)
+#    is_on_list = 9972 not in downloaded_token_id_list
+#    print(counter)
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
